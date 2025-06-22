@@ -10,10 +10,27 @@ import {
 import { GetSet, IRect } from '../types';
 import { Context } from '../Context';
 
+export interface MaskStroke {
+  // Flat array of points like in Konva.Line
+  points: number[];
+  // Stroke width in pixels
+  strokeWidth?: number;
+  // When true we will close the path and fill it to act as clipping polygon
+  closed?: boolean;
+}
+
 export interface ImageConfig extends ShapeConfig {
   image: CanvasImageSource | undefined;
   crop?: IRect;
   cornerRadius?: number | number[];
+  // Optional array of mask strokes definitions
+  maskStrokes?: MaskStroke[];
+  /**
+   * Define how to apply mask strokes:
+   *  - "keep" (default) keeps (reveals) pixels under strokes
+   *  - "erase" removes pixels under strokes (eraser effect)
+   */
+  maskMode?: 'keep' | 'erase';
 }
 
 /**
@@ -128,6 +145,45 @@ export class Image extends Shape<ImageConfig> {
         context.clip();
       }
       context.drawImage.apply(context, params);
+
+      // After drawing the image apply optional masking strokes
+      const maskStrokes = this.maskStrokes ? this.maskStrokes() : undefined;
+      if (maskStrokes && maskStrokes.length) {
+        // create a temporary canvas to draw mask
+        const maskCanvas = Util.createCanvasElement();
+        maskCanvas.width = width;
+        maskCanvas.height = height;
+        const mCtx = maskCanvas.getContext('2d');
+        if (mCtx) {
+          mCtx.lineCap = 'round';
+          mCtx.lineJoin = 'round';
+          mCtx.fillStyle = 'black';
+          mCtx.strokeStyle = 'black';
+          maskStrokes.forEach((ms: MaskStroke) => {
+            if (!ms || !ms.points || ms.points.length < 2) return;
+            mCtx.beginPath();
+            mCtx.lineWidth = ms.strokeWidth ?? 1;
+            mCtx.moveTo(ms.points[0], ms.points[1]);
+            for (let i = 2; i < ms.points.length; i += 2) {
+              mCtx.lineTo(ms.points[i], ms.points[i + 1]);
+            }
+            if (ms.closed) {
+              mCtx.closePath();
+              mCtx.fill();
+            } else {
+              mCtx.stroke();
+            }
+          });
+
+          // choose composite operation based on mode
+          const mode = this.maskMode ? this.maskMode() : 'erase';
+          const op = mode === 'erase' ? 'destination-out' : 'destination-in';
+          context.save();
+          context.globalCompositeOperation = op;
+          context.drawImage(maskCanvas, 0, 0, width, height);
+          context.restore();
+        }
+      }
     }
     // If you need to draw later, you need to execute save/restore
   }
@@ -189,6 +245,8 @@ export class Image extends Shape<ImageConfig> {
   cropWidth: GetSet<number, this>;
   cropHeight: GetSet<number, this>;
   cornerRadius: GetSet<number | number[], this>;
+  maskStrokes: GetSet<MaskStroke[], this>;
+  maskMode: GetSet<'keep' | 'erase', this>;
 }
 
 Image.prototype.className = 'Image';
@@ -303,6 +361,10 @@ Factory.addGetterSetter(Image, 'cropWidth', 0, getNumberValidator());
  */
 
 Factory.addGetterSetter(Image, 'cropHeight', 0, getNumberValidator());
+
+// get/set mask strokes definitions
+Factory.addGetterSetter(Image, 'maskStrokes', []);
+Factory.addGetterSetter(Image, 'maskMode', 'erase');
 /**
  * get/set crop height
  * @name Konva.Image#cropHeight

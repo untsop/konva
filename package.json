@@ -21,7 +21,7 @@
     "test": "npm run test:browser && npm run test:node",
     "test:build": "PARCEL_WORKER_BACKEND=process parcel build ./test/unit-tests.html --dist-dir ./test-build --target none --public-url ./ --no-source-maps",
     "test:browser": "npm run test:build && mocha-headless-chrome -f ./test-build/unit-tests.html -a disable-web-security -a no-sandbox -a disable-setuid-sandbox",
-    "test:watch": "rm -rf ./.parcel-cache && PARCEL_WORKERS=0  parcel serve ./test/unit-tests.html ./test/manual-tests.html ./test/sandbox.html ./test/text-paths.html ./test/bunnies.html",
+    "test:watch": "rm -rf ./.parcel-cache && PARCEL_WORKERS=0  parcel serve ./test/unit-tests.html ./test/manual-tests.html ./test/sandbox.html ./test/masks.html ./test/text-paths.html ./test/bunnies.html",
     "test:node:compiled": "rm -rf ./.test-temp && mkdir ./.test-temp && (tsc -p ./test/tsconfig.json --outDir ./.test-temp || true) && mocha './.test-temp/test/unit/**/*.js' -r ./test/node-global-setup.mjs --exit && rm -rf ./.test-temp && npm run test:import",
     "test:node": "npm run test:node:compiled",
     "tsc": "tsc --removeComments",
@@ -64,6 +64,7 @@
     "@parcel/transformer-image": "2.13.2",
     "@size-limit/preset-big-lib": "^11.1.6",
     "@types/mocha": "^10.0.10",
+    "buffer": "^5.5.0||^6.0.0",
     "canvas": "^3.1.0",
     "chai": "5.1.2",
     "filehound": "^1.17.6",
@@ -107,5 +108,6 @@
     "type": "git",
     "url": "git://github.com/konvajs/konva.git"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "packageManager": "pnpm@9.5.0+sha512.140036830124618d624a2187b50d04289d5a087f326c9edfc0ccd733d76c4f52c3a313d4fc148794a2a9d81553016004e6742e8cf850670268a7387fc220c903"
 }
